@@ -1,0 +1,11 @@
+esta documentacion consta de 2 programas, uno para borrar y otro para recuperar
+
+> BORRAR
+"borra" los programas, moviendolos a una carpeta oculta a la vista del usuario
+uso:
+./borrar.sh hola.txt
+
+> RECUPERAR
+recupera el programa, regresandolo a la posicion original
+uso:
+./recuperar.sh hola.txt
