@@ -1,2 +1,2 @@
 #!/bin/bash
-mv "./temp-archivo/$1" "./temp-archivo/.."
+mv "./temp-$1/$1" "./temp-$1/.."
