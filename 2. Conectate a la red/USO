@@ -1,1 +1,6 @@
-uo
+el programa consta de un menú interactivo que te permite gestionar la conectividad de redes desde la linea de comandos. 
+Inicialmente, muestra las interfaces de red disponibles y te permite seleccionar una para cambiar su estado entre "UP"
+y "DOWN". Luego, te da la opción de conectarte de manera inalámbrica o cableada.. Si escoges la conexión inalámbrica,
+se muestran las redes Wi-Fi disponibles y se solicita el nombre de la red y la contraseña para establecer la conexión.
+En caso de elegir una conexión cableada, el programa activa la interfaz de red. Finalmente, se ofrece la opcion de configurar
+la red con DHCP o con una dirección IP fija, dependiendo de lo que el usuario elija, aplicando la configuración correspondiente.
