@@ -1,4 +1,4 @@
-#! /usr/bin/env bash
+#!/bin/bash
 
 min_length=8
 require_uppercase=true
@@ -7,18 +7,13 @@ require_numbers=true
 require_special_chars=true
 special_chars="!@#$%^&*"
 
-red='\033[0;31m'
-green='\033[0;32m'
-yellow='\033[1;33m'
-nc='\033[0m'
-
 mostrar_reglas_contrasena() {
-    echo -e "${yellow}\nreglas para la contrasena:${nc}"
+    echo -e "\nreglas para la contrasena:"
     echo "- longitud minima: $min_length caracteres"
-    [[ "$require_uppercase" = true ]] && echo "- debe contener al menos una letra mayuscula"
-    [[ "$require_lowercase" = true ]] && echo "- debe contener al menos una letra minuscula"
-    [[ "$require_numbers" = true ]] && echo "- debe contener al menos un numero"
-    [[ "$require_special_chars" = true ]] && echo "- debe contener al menos un caracter especial: $special_chars"
+    test "$require_uppercase" = true && echo "- debe contener al menos una letra mayuscula"
+    test "$require_lowercase" = true && echo "- debe contener al menos una letra minuscula"
+    test "$require_numbers" = true && echo "- debe contener al menos un numero"
+    test "$require_special_chars" = true && echo "- debe contener al menos un caracter especial: $special_chars"
     echo ""
 }
 
@@ -26,41 +21,39 @@ validar_contrasena() {
     local contrasena=$1
     local valida=true
     
-    if [ ${#contrasena} -lt $min_length ]; then
-        echo -e "${red}la contrasena es demasiado corta. minimo $min_length caracteres.${nc}"
+    test ${#contrasena} -lt $min_length && {
+        echo "la contrasena es demasiado corta. minimo $min_length caracteres."
         valida=false
-    fi
+    }
     
-    if [[ "$require_uppercase" = true && ! "$contrasena" =~ [A-Z] ]]; then
-        echo -e "${red}la contrasena debe contener al menos una letra mayuscula.${nc}"
+    test "$require_uppercase" = true && ! echo "$contrasena" | grep -q [A-Z] && {
+        echo "la contrasena debe contener al menos una letra mayuscula."
         valida=false
-    fi
+    }
     
-    if [[ "$require_lowercase" = true && ! "$contrasena" =~ [a-z] ]]; then
-        echo -e "${red}la contrasena debe contener al menos una letra minuscula.${nc}"
+    test "$require_lowercase" = true && ! echo "$contrasena" | grep -q [a-z] && {
+        echo "la contrasena debe contener al menos una letra minuscula."
         valida=false
-    fi
+    }
     
-    if [[ "$require_numbers" = true && ! "$contrasena" =~ [0-9] ]]; then
-        echo -e "${red}la contrasena debe contener al menos un numero.${nc}"
+    test "$require_numbers" = true && ! echo "$contrasena" | grep -q [0-9] && {
+        echo "la contrasena debe contener al menos un numero."
         valida=false
-    fi
+    }
     
-    if [[ "$require_special_chars" = true ]]; then
-        if ! [[ "$contrasena" =~ [$special_chars] ]]; then
-            echo -e "${red}la contrasena debe contener al menos un caracter especial: $special_chars${nc}"
-            valida=false
-        fi
-    fi
+    test "$require_special_chars" = true && ! echo "$contrasena" | grep -q "[$special_chars]" && {
+        echo "la contrasena debe contener al menos un caracter especial: $special_chars"
+        valida=false
+    }
     
     $valida
 }
 
-echo -e "${green}creacion de nuevo usuario${nc}"
+echo "creacion de nuevo usuario"
 read -p "nombre de usuario: " usuario
 
-if id "$usuario" &>/dev/null; then
-    echo -e "${red}el usuario $usuario ya existe.${nc}"
+if id "$usuario" >/dev/null 2>&1; then
+    echo "el usuario $usuario ya existe."
     exit 1
 fi
 
@@ -75,32 +68,35 @@ while true; do
     read -s -p "confirmar contrasena: " confirmar_contrasena
     echo
     
-    if [ "$contrasena" != "$confirmar_contrasena" ]; then
-        echo -e "${red}las contrasenas no coinciden. intente nuevamente.${nc}"
-    elif validar_contrasena "$contrasena"; then
-        echo -e "${green}contrasena valida.${nc}"
+    test "$contrasena" != "$confirmar_contrasena" && {
+        echo "las contrasenas no coinciden. intente nuevamente."
+        continue
+    }
+    
+    validar_contrasena "$contrasena" && {
+        echo "contrasena valida."
         break
-    else
-        echo -e "${red}por favor, corrija los errores e intente nuevamente.${nc}"
-    fi
+    } || echo "por favor, corrija los errores e intente nuevamente."
 done
 
 comando_useradd="useradd"
 
-[[ -n "$nombre_completo" ]] && comando_useradd+=" -c \"$nombre_completo\""
-[[ -n "$directorio_home" ]] && comando_useradd+=" -d \"$directorio_home\"" || comando_useradd+=" -m"
-[[ -n "$grupo_principal" ]] && comando_useradd+=" -g \"$grupo_principal\""
+test -n "$nombre_completo" && comando_useradd="$comando_useradd -c \"$nombre_completo\""
+test -n "$directorio_home" && comando_useradd="$comando_useradd -d \"$directorio_home\"" || comando_useradd="$comando_useradd -m"
+test -n "$grupo_principal" && comando_useradd="$comando_useradd -g \"$grupo_principal\""
 
-comando_useradd+=" \"$usuario\""
+comando_useradd="$comando_useradd \"$usuario\""
 
 eval $comando_useradd
 
 echo "$usuario:$contrasena" | chpasswd
 
-echo -e "${green}\nusuario creado exitosamente:${nc}"
-echo -e "nombre de usuario: $usuario"
-[[ -n "$nombre_completo" ]] && echo "nombre completo: $nombre_completo"
+echo -e "\nusuario creado exitosamente:"
+echo "nombre de usuario: $usuario"
+test -n "$nombre_completo" && echo "nombre completo: $nombre_completo"
 echo "directorio home: $(eval echo ~$usuario)"
 echo "grupo principal: $(id -gn $usuario)"
 echo "uid: $(id -u $usuario)"
 echo "gid: $(id -g $usuario)"
+
+exit 0
