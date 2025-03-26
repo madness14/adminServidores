@@ -26,23 +26,23 @@ validar_contrasena() {
         valida=false
     }
     
-    test "$require_uppercase" = true && ! echo "$contrasena" | grep -q [A-Z] && {
+    test "$require_uppercase" = true && ! [[ "$contrasena" =~ [A-Z] ]] && {
         echo "la contrasena debe contener al menos una letra mayuscula."
         valida=false
     }
     
-    test "$require_lowercase" = true && ! echo "$contrasena" | grep -q [a-z] && {
+    test "$require_lowercase" = true && ! [[ "$contrasena" =~ [a-z] ]] && {
         echo "la contrasena debe contener al menos una letra minuscula."
         valida=false
     }
     
-    test "$require_numbers" = true && ! echo "$contrasena" | grep -q [0-9] && {
+    test "$require_numbers" = true && ! [[ "$contrasena" =~ [0-9] ]] && {
         echo "la contrasena debe contener al menos un numero."
         valida=false
     }
     
-    test "$require_special_chars" = true && ! echo "$contrasena" | grep -q "[$special_chars]" && {
-        echo "la contrasena debe contener al menos un caracter especial: $special_chars"
+    test "$require_special_chars" = true && ! [[ "$contrasena" =~ [$special_chars] ]] && {
+        echo "la contrasena debe contener al menos un caracter especial"
         valida=false
     }
     
@@ -73,21 +73,23 @@ while true; do
         continue
     }
     
-    validar_contrasena "$contrasena" && {
+    if validar_contrasena "$contrasena"; then
         echo "contrasena valida."
         break
-    } || echo "por favor, corrija los errores e intente nuevamente."
+    else
+        echo "corrija los errores e intente nuevamente."
+    fi
 done
 
-comando_useradd="useradd"
+args=()
 
-test -n "$nombre_completo" && comando_useradd="$comando_useradd -c \"$nombre_completo\""
-test -n "$directorio_home" && comando_useradd="$comando_useradd -d \"$directorio_home\"" || comando_useradd="$comando_useradd -m"
-test -n "$grupo_principal" && comando_useradd="$comando_useradd -g \"$grupo_principal\""
+test -n "$nombre_completo" && args+=(-c "$nombre_completo")
+test -n "$directorio_home" && args+=(-d "$directorio_home") || args+=(-m)
+test -n "$grupo_principal" && args+=(-g "$grupo_principal")
 
-comando_useradd="$comando_useradd \"$usuario\""
+args+=("$usuario")
 
-eval $comando_useradd
+useradd "${args[@]}"
 
 echo "$usuario:$contrasena" | chpasswd
 
