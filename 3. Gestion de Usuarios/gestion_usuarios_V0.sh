@@ -1,4 +1,4 @@
-#!/bin/bash
+#! /usr/bin/env bash
 
 min_length=8
 require_uppercase=true
