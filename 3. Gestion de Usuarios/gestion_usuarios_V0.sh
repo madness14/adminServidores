@@ -42,7 +42,7 @@ validar_contrasena() {
     }
     
     test "$require_special_chars" = true && ! [[ "$contrasena" =~ [$special_chars] ]] && {
-        echo "la contrasena debe contener al menos un caracter especial"
+        echo "la contrasena debe contener al menos un caracter especial: $special_chars"
         valida=false
     }
     
@@ -50,12 +50,15 @@ validar_contrasena() {
 }
 
 echo "creacion de nuevo usuario"
-read -p "nombre de usuario: " usuario
-
-if id "$usuario" >/dev/null 2>&1; then
-    echo "el usuario $usuario ya existe."
-    exit 1
-fi
+while true; do
+    read -p "nombre de usuario: " usuario
+    
+    if getent passwd "$usuario" >/dev/null 2>&1; then
+        echo "el usuario $usuario ya existe. ingrese otro nombre."
+    else
+        break
+    fi
+done
 
 read -p "nombre completo (opcional): " nombre_completo
 read -p "directorio home (opcional, dejar en blanco para default): " directorio_home
@@ -77,7 +80,7 @@ while true; do
         echo "contrasena valida."
         break
     else
-        echo "corrija los errores e intente nuevamente."
+        echo "por favor, corrija los errores e intente nuevamente."
     fi
 done
 
@@ -89,9 +92,16 @@ test -n "$grupo_principal" && args+=(-g "$grupo_principal")
 
 args+=("$usuario")
 
-useradd "${args[@]}"
+if ! useradd "${args[@]}" 2>/dev/null; then
+    echo "error: no se pudo crear el usuario $usuario"
+    exit 1
+fi
 
-echo "$usuario:$contrasena" | chpasswd
+if ! echo "$usuario:$contrasena" | chpasswd 2>/dev/null; then
+    echo "error: no se pudo establecer la contrasena para $usuario"
+    userdel "$usuario" 2>/dev/null
+    exit 1
+fi
 
 echo -e "\nusuario creado exitosamente:"
 echo "nombre de usuario: $usuario"
