@@ -1,5 +1,7 @@
 #! /usr/bin/env bash
 
+set -e
+
 min_length=8
 require_uppercase=true
 require_lowercase=true
@@ -41,28 +43,35 @@ validar_contrasena() {
         valida=false
     }
     
-    test "$require_special_chars" = true && ! [[ "$contrasena" =~ [$special_chars] ]] && {
-        echo "la contrasena debe contener al menos un caracter especial: $special_chars"
-        valida=false
+    test "$require_special_chars" = true && {
+        pattern="[$(printf '%q' "$special_chars")]"
+        if ! [[ "$contrasena" =~ $pattern ]]; then
+            echo "la contrasena debe contener al menos un caracter especial: $special_chars"
+            valida=false
+        fi
     }
     
     $valida
 }
 
 echo "creacion de nuevo usuario"
-while true; do
-    read -p "nombre de usuario: " usuario
-    
-    if getent passwd "$usuario" >/dev/null 2>&1; then
-        echo "el usuario $usuario ya existe. ingrese otro nombre."
-    else
-        break
-    fi
-done
+read -p "nombre de usuario: " usuario
+
+if id "$usuario" >/dev/null 2>&1; then
+    echo "el usuario $usuario ya existe."
+    exit 1
+fi
 
 read -p "nombre completo (opcional): " nombre_completo
 read -p "directorio home (opcional, dejar en blanco para default): " directorio_home
 read -p "grupo principal (opcional, dejar en blanco para default): " grupo_principal
+
+if [ -n "$grupo_principal" ]; then
+    if ! getent group "$grupo_principal" >/dev/null; then
+        echo "el grupo $grupo_principal no existe."
+        exit 1
+    fi
+fi
 
 while true; do
     mostrar_reglas_contrasena
@@ -71,10 +80,10 @@ while true; do
     read -s -p "confirmar contrasena: " confirmar_contrasena
     echo
     
-    test "$contrasena" != "$confirmar_contrasena" && {
+    if [ "$contrasena" != "$confirmar_contrasena" ]; then
         echo "las contrasenas no coinciden. intente nuevamente."
         continue
-    }
+    fi
     
     if validar_contrasena "$contrasena"; then
         echo "contrasena valida."
@@ -86,29 +95,29 @@ done
 
 args=()
 
-test -n "$nombre_completo" && args+=(-c "$nombre_completo")
-test -n "$directorio_home" && args+=(-d "$directorio_home") || args+=(-m)
-test -n "$grupo_principal" && args+=(-g "$grupo_principal")
+[ -n "$nombre_completo" ] && args+=(-c "$nombre_completo")
+[ -n "$directorio_home" ] && args+=(-d "$directorio_home" -m) || args+=(-m)
+[ -n "$grupo_principal" ] && args+=(-g "$grupo_principal")
 
 args+=("$usuario")
 
-if ! useradd "${args[@]}" 2>/dev/null; then
-    echo "error: no se pudo crear el usuario $usuario"
+if ! useradd "${args[@]}"; then
+    echo "no se pudo crear el usuario."
     exit 1
 fi
 
-if ! echo "$usuario:$contrasena" | chpasswd 2>/dev/null; then
-    echo "error: no se pudo establecer la contrasena para $usuario"
-    userdel "$usuario" 2>/dev/null
+if ! echo "$usuario:$contrasena" | chpasswd; then
+    echo "no se pudo establecer la contrasena."
+    userdel "$usuario"
     exit 1
 fi
-
-echo -e "\nusuario creado exitosamente:"
-echo "nombre de usuario: $usuario"
-test -n "$nombre_completo" && echo "nombre completo: $nombre_completo"
-echo "directorio home: $(eval echo ~$usuario)"
-echo "grupo principal: $(id -gn $usuario)"
-echo "uid: $(id -u $usuario)"
-echo "gid: $(id -g $usuario)"
-
-exit 0
+#
+ echo -e "\nusuario creado exitosamente:"
+# echo "INFORMACION DEL USUARIO"
+# echo "#################################"
+# echo "nombre de usuario: $usuario"
+# [ -n "$nombre_completo" ] && echo "nombre completo: $nombre_completo"
+# echo "directorio home: $(eval echo ~$usuario)"
+# echo "grupo principal: $(id -gn $usuario)"
+# echo "uid: $(id -u $usuario)"
+# echo "gid: $(id -g $usuario)"
