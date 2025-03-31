@@ -67,14 +67,9 @@ establecer_cuota() {
     
     if ! setquota -u "$usuario" "$soft" "$hard" 0 0 "$filesystem"; then
         echo "advertencia: no se pudo establecer la cuota para el usuario $usuario."
-        echo "asegurese de que:"
-        echo "1. El sistema de archivos soporta cuotas"
-        echo "2. El paquete quota esta instalado"
-        echo "3. Tienes permisos de administrador"
         return 1
     fi
     
-    # Activar quotas si no están activadas
     if ! quotaon -u "$usuario"; then
         echo "advertencia: no se pudieron activar las quotas para el usuario."
     fi
@@ -121,7 +116,6 @@ while true; do
     fi
 done
 
-# Preguntar por cuotas
 cuota_soft=""
 cuota_hard=""
 read -p "establecer cuotas para el usaurio>?: " establecer_cuota_resp
@@ -140,11 +134,11 @@ if [[ "$establecer_cuota_resp" =~ ^[SsYy] ]]; then
     done
     
     while true; do
-        read -p "límite hard (bloques, debe ser >= soft): " cuota_hard
+        read -p "limite hard (bloques, debe ser >= soft): " cuota_hard
         if validar_cuota "$cuota_hard" && [ "$cuota_hard" -ge "$cuota_soft" ]; then
             break
         else
-            echo "valor inválido. debe ser un número entero positivo mayor o igual al límite soft."
+            echo "valor invaido. debe ser un número entero positivo mayor o igual al límite soft."
         fi
     done
 fi
